@@ -1,6 +1,7 @@
 # ghost.py
 import pygame
 import random
+import Astar
 import time
 from settings import WIDTH, CHAR_SIZE, GHOST_SPEED
 
@@ -40,6 +41,20 @@ class Ghost(pygame.sprite.Sprite):
         self.image = pygame.image.load(self.img_path + self.img_name)
         self.image = pygame.transform.scale(self.image, (CHAR_SIZE, CHAR_SIZE))
         self.rect = self.image.get_rect(topleft=(self.rect.x, self.rect.y))
+
+    def move_to_pacman(self, grid, pacman_position):
+        # Tìm đường đi đến Pacman bằng thuật toán A*
+        path = Astar.a_star_search(grid, [self.rect.y // CHAR_SIZE, self.rect.x // CHAR_SIZE], pacman_position)
+
+        if path:
+            # Di chuyển theo bước tiếp theo trong đường đi đến Pacman
+            next_step = path[1]  # Lấy bước tiếp theo trong đường đi (bước đầu tiên là vị trí hiện tại)
+
+            # Cập nhật vị trí của ma
+            self.rect.x = next_step[1] * CHAR_SIZE  # Cập nhật theo cột (x)
+            self.rect.y = next_step[0] * CHAR_SIZE  # Cập nhật theo hàng (y)
+
+            print(f"Ghost moved to {self.rect.x}, {self.rect.y}")
 
     def update(self, walls_collide_list):
         # ghost movement
