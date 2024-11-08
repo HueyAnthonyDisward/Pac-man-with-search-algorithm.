@@ -1,27 +1,31 @@
-# ghost.py
 import pygame
 import random
-import Astar
 import time
+
 from settings import WIDTH, CHAR_SIZE, GHOST_SPEED
+
 
 class Ghost(pygame.sprite.Sprite):
     def __init__(self, row, col, color):
         super().__init__()
         self.abs_x = (row * CHAR_SIZE)
         self.abs_y = (col * CHAR_SIZE)
+
         self.rect = pygame.Rect(self.abs_x, self.abs_y, CHAR_SIZE, CHAR_SIZE)
         self.move_speed = GHOST_SPEED
         self.color = pygame.Color(color)
-        self.move_directions = [(-1,0), (0,-1), (1,0), (0,1)]
+        self.move_directions = [(-1, 0), (0, -1), (1, 0), (0, 1)]
+
         self.moving_dir = "up"
         self.img_path = f'assets/ghosts/{color}/'
         self.img_name = f'{self.moving_dir}.png'
         self.image = pygame.image.load(self.img_path + self.img_name)
         self.image = pygame.transform.scale(self.image, (CHAR_SIZE, CHAR_SIZE))
-        self.rect = self.image.get_rect(topleft = (self.abs_x, self.abs_y))
+        self.rect = self.image.get_rect(topleft=(self.abs_x, self.abs_y))
         self.mask = pygame.mask.from_surface(self.image)
-        self.directions = {'left': (-self.move_speed, 0), 'right': (self.move_speed, 0), 'up': (0, -self.move_speed), 'down': (0, self.move_speed)}
+
+        self.directions = {'left': (-self.move_speed, 0), 'right': (self.move_speed, 0), 'up': (0, -self.move_speed),
+                           'down': (0, self.move_speed)}
         self.keys = ['left', 'right', 'up', 'down']
         self.direction = (0, 0)
 
@@ -35,26 +39,11 @@ class Ghost(pygame.sprite.Sprite):
             return False
         return True
 
-# ghost.py
     def _animate(self):
         self.img_name = f'{self.moving_dir}.png'
         self.image = pygame.image.load(self.img_path + self.img_name)
         self.image = pygame.transform.scale(self.image, (CHAR_SIZE, CHAR_SIZE))
         self.rect = self.image.get_rect(topleft=(self.rect.x, self.rect.y))
-
-    def move_to_pacman(self, grid, pacman_position):
-        # Tìm đường đi đến Pacman bằng thuật toán A*
-        path = Astar.a_star_search(grid, [self.rect.y // CHAR_SIZE, self.rect.x // CHAR_SIZE], pacman_position)
-
-        if path:
-            # Di chuyển theo bước tiếp theo trong đường đi đến Pacman
-            next_step = path[1]  # Lấy bước tiếp theo trong đường đi (bước đầu tiên là vị trí hiện tại)
-
-            # Cập nhật vị trí của ma
-            self.rect.x = next_step[1] * CHAR_SIZE  # Cập nhật theo cột (x)
-            self.rect.y = next_step[0] * CHAR_SIZE  # Cập nhật theo hàng (y)
-
-            print(f"Ghost moved to {self.rect.x}, {self.rect.y}")
 
     def update(self, walls_collide_list):
         # ghost movement
@@ -62,18 +51,22 @@ class Ghost(pygame.sprite.Sprite):
         for key in self.keys:
             if not self.is_collide(*self.directions[key], walls_collide_list):
                 available_moves.append(key)
-        randomizing = False if len(available_moves) <= 2 and self.direction != (0,0) else True
+
+        randomizing = False if len(available_moves) <= 2 and self.direction != (0, 0) else True
         # 60% chance of randomizing ghost move
-        if randomizing and random.randrange( 0,100 ) <= 60:
+        if randomizing and random.randrange(0, 100) <= 60:
             self.moving_dir = random.choice(available_moves)
             self.direction = self.directions[self.moving_dir]
+
         if not self.is_collide(*self.direction, walls_collide_list):
             self.rect.move_ip(self.direction)
         else:
-            self.direction = (0,0)
+            self.direction = (0, 0)
+
         # teleporting to the other side of the map
         if self.rect.right <= 0:
             self.rect.x = WIDTH
         elif self.rect.left >= WIDTH:
             self.rect.x = 0
+
         self._animate()

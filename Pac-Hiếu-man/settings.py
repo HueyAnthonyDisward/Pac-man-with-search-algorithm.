@@ -22,8 +22,7 @@ MAP = [
     ['1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1']
 ]
 
-def create_grid_from_map():
-    return [[0 if cell == ' ' else 1 for cell in row] for row in MAP]
+
 BOARD_RATIO = (len(MAP[0]), len(MAP))
 CHAR_SIZE = 32
 WIDTH, HEIGHT = (BOARD_RATIO[0] * CHAR_SIZE, BOARD_RATIO[1] * CHAR_SIZE)

@@ -6,8 +6,11 @@ from animation import import_sprite
 class Pac(pygame.sprite.Sprite):
     def __init__(self, row, col):
         super().__init__()
-        self.abs_x = (row * CHAR_SIZE)
-        self.abs_y = (col * CHAR_SIZE)
+
+        self.initial_x = (row * CHAR_SIZE)
+        self.initial_y = (col * CHAR_SIZE)
+        self.abs_x = self.initial_x
+        self.abs_y = self.initial_y
         # pac animation
         self._import_character_assets()
         self.frame_index = 0
@@ -51,8 +54,9 @@ class Pac(pygame.sprite.Sprite):
     def move_to_start_pos(self):
         self.rect.x = self.abs_x
         self.rect.y = self.abs_y
+        self.log_position()
 
-    # update with sprite/sheets
+        # update with sprite/sheets
     def animate(self, pressed_key, walls_collide_list):
         animation = self.animations[self.status]
         # loop over frame index
@@ -70,6 +74,7 @@ class Pac(pygame.sprite.Sprite):
         if not self._is_collide(*self.direction):
             self.rect.move_ip(self.direction)
             self.status = self.status if not self.immune else "power_up"
+            self.log_position()
         if self._is_collide(*self.direction):
             self.status = "idle" if not self.immune else "power_up"
 
@@ -78,3 +83,6 @@ class Pac(pygame.sprite.Sprite):
         self.immune = True if self.immune_time > 0 else False
         self.immune_time -= 1 if self.immune_time > 0 else 0
         self.rect = self.image.get_rect(topleft=(self.rect.x, self.rect.y))
+
+    def log_position(self):
+        print(f"Pac-Man position: ({self.rect.x}, {self.rect.y})")

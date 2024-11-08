@@ -20,6 +20,7 @@ class World:
         self.player_score = 0
         self.game_level = 1
         self._generate_world()
+
     # create and add player to the screen
     def _generate_world(self):
         # renders obstacle from the MAP table
@@ -73,6 +74,7 @@ class World:
         self.display.show_life(self.player.sprite.life)
         self.display.show_level(self.game_level)
         self.display.show_score(self.player.sprite.pac_score)
+
     def _check_game_state(self):
         # checks if game over
         if self.player.sprite.life == 0:
@@ -87,6 +89,7 @@ class World:
             self.player.sprite.direction = (0, 0)
             self.player.sprite.status = "idle"
             self.generate_new_level()
+
     def update(self):
         if not self.game_over:
             # player movement
