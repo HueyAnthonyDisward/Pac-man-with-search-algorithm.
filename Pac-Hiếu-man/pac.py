@@ -29,6 +29,9 @@ class Pac(pygame.sprite.Sprite):
         self.life = 3
         self.pac_score = 0
 
+        self.previous_position = (self.rect.x, self.rect.y)
+        self.log_position()
+
     # gets all the image needed for animating specific player action
     def _import_character_assets(self):
         character_path = "assets/pac/"
@@ -54,6 +57,7 @@ class Pac(pygame.sprite.Sprite):
     def move_to_start_pos(self):
         self.rect.x = self.abs_x
         self.rect.y = self.abs_y
+        self.previous_position = (self.rect.x, self.rect.y)
         self.log_position()
 
         # update with sprite/sheets
@@ -74,7 +78,9 @@ class Pac(pygame.sprite.Sprite):
         if not self._is_collide(*self.direction):
             self.rect.move_ip(self.direction)
             self.status = self.status if not self.immune else "power_up"
-            self.log_position()
+            if (self.rect.x, self.rect.y) != self.previous_position:
+                self.previous_position = (self.rect.x, self.rect.y)
+                self.log_position()
         if self._is_collide(*self.direction):
             self.status = "idle" if not self.immune else "power_up"
 
@@ -85,4 +91,6 @@ class Pac(pygame.sprite.Sprite):
         self.rect = self.image.get_rect(topleft=(self.rect.x, self.rect.y))
 
     def log_position(self):
-        print(f"Pac-Man position: ({self.rect.x}, {self.rect.y})")
+        x_index = self.rect.x // CHAR_SIZE  # Tính chỉ số hàng
+        y_index = self.rect.y // CHAR_SIZE  # Tính chỉ số cột
+        print(f"Pac-Man's current position: ({x_index}, {y_index})")
