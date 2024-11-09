@@ -28,7 +28,7 @@ converted_map = convert_map(MAP)
 '''
 
 
-# In ma trận đã chuyển đổi
+
 mapping = MAP
 start = (7, 9)
 destination = (15, 9)
