@@ -57,11 +57,19 @@ class Ghost(pygame.sprite.Sprite):
         start = (self.rect.y // CHAR_SIZE, self.rect.x // CHAR_SIZE)
         destination = (pacman_position[1] // CHAR_SIZE, pacman_position[0] // CHAR_SIZE)
 
-        # Điều chỉnh tốc độ cho mỗi loại ghost
-
-
-        # Tìm đường đi từ vị trí hiện tại đến Pac-Man
-        path = best_first_search(MAP, start, destination)
+        # Chọn thuật toán tìm đường dựa trên màu của con ma
+        if self.color_name == "Red":
+            path = best_first_search(MAP, start, destination)
+            ghost_speed *= 1.1
+        elif self.color_name == "Sky Blue":
+            path = ids_search(MAP, start, destination)
+            ghost_speed *= 2
+        elif self.color_name == "Orange":
+            path = a_star_search(MAP, start, destination)
+            ghost_speed *= 1.05
+        elif self.color_name == "Pink":
+            path = bfs_search(MAP, start, destination)
+            ghost_speed *= 1.2
 
         if not path:
             print(f"Ghost {self.color_name} could not find a path to Pac-Man.")
@@ -99,8 +107,6 @@ class Ghost(pygame.sprite.Sprite):
             self.current_position = (self.rect.y // CHAR_SIZE, self.rect.x // CHAR_SIZE)
             if self.current_position != self.previous_position:
                 self.previous_position = self.current_position
-
-
 
     def is_collide(self, dx, dy, walls_collide_list):
         tmp_rect = self.rect.move(dx, dy)

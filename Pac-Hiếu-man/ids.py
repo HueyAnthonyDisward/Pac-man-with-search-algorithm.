@@ -18,7 +18,7 @@ def ids_search(grid, start, destination):
 
     # Các hướng di chuyển: lên, trái, xuống, phải
 
-
+    directions = [(0, -1), (-1, 0), (0, 1), (1, 0)]
 
     def search(path, g_cost, depth_limit):
         """Hàm tìm kiếm IDA* từ vị trí hiện tại, với giới hạn độ sâu."""
