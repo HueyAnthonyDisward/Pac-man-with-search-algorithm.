@@ -63,7 +63,7 @@ class Ghost(pygame.sprite.Sprite):
             ghost_speed *= 1.1
         elif self.color_name == "Sky Blue":
             path = ids_search(MAP, start, destination)
-            ghost_speed *= 2
+            ghost_speed *= 1.5
         elif self.color_name == "Orange":
             path = a_star_search(MAP, start, destination)
             ghost_speed *= 1.05

@@ -2,18 +2,10 @@ import math
 
 
 def heuristic(a, b):
-    """Hàm heuristic tính khoảng cách Manhattan giữa hai điểm a và b."""
     return abs(a[0] - b[0]) + abs(a[1] - b[1])
 
 
 def ids_search(grid, start, destination):
-    """
-    Tìm đường đi từ ghost đến Pacman sử dụng thuật toán IDA* (Iterative Deepening A*).
-    :param grid: Ma trận biểu thị bản đồ, với giá trị '1' là tường và các ô khác có thể đi qua.
-    :param start: Tuple (x, y) - vị trí bắt đầu (ghost).
-    :param destination: Tuple (x, y) - vị trí đích (Pacman).
-    :return: Danh sách các tọa độ từ ghost đến Pacman nếu tìm thấy đường đi, ngược lại trả về [].
-    """
     rows, cols = len(grid), len(grid[0])
 
     # Các hướng di chuyển: lên, trái, xuống, phải
@@ -21,7 +13,6 @@ def ids_search(grid, start, destination):
     directions = [(0, -1), (-1, 0), (0, 1), (1, 0)]
 
     def search(path, g_cost, depth_limit):
-        """Hàm tìm kiếm IDA* từ vị trí hiện tại, với giới hạn độ sâu."""
         current = path[-1]
         f_cost = g_cost + heuristic(current, destination)  # Hàm f = g + h
 
