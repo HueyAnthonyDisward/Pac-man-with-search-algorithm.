@@ -2,7 +2,7 @@ from collections import deque
 
 # Hàm bfs_search đã được định nghĩa ở trên
 from bfs import bfs_search
-from dfs import dfs_search
+from bestfs import dfs_search
 from settings import MAP
 from Astar import a_star_search
 '''
