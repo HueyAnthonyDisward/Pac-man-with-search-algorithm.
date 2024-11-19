@@ -5,9 +5,9 @@ from bfs import bfs_search
 from bestfs import best_first_search
 from Astar import a_star_search
 from ids import ids_search
-from Local import ghost_hill_climbing
+from Local import simulated_annealing
 from dfs import dfs_search
-
+from AC3 import backtrack,ac3
 COLOR_NAMES = {
     (255, 0, 0): "Red",
     (135, 206, 235): "Sky Blue",
@@ -58,22 +58,23 @@ class Ghost(pygame.sprite.Sprite):
     def update(self, walls_collide_list, pacman_position, ghost_speed=GHOST_SPEED):
         start = (self.rect.y // CHAR_SIZE, self.rect.x // CHAR_SIZE)
         destination = (pacman_position[1] // CHAR_SIZE, pacman_position[0] // CHAR_SIZE)
+        possible_moves = ac3(MAP, start, destination)
 
         # Chọn thuật toán tìm đường dựa trên màu của con ma
         if self.color_name == "Red":
             path = best_first_search(MAP, start, destination)
-            ghost_speed *= 1.1
+            ghost_speed *= 0.1
         elif self.color_name == "Sky Blue":
             path = ids_search(MAP, start, destination)
-            ghost_speed *= 1.07
+            ghost_speed *= 0.1
         elif self.color_name == "Orange":
-            path = ghost_hill_climbing(MAP, start, destination)
-            ghost_speed *= 0.9
+            path = simulated_annealing(MAP, start, destination)
+            ghost_speed *= 0.1
             if path:
                 print(f"Orange Ghost Path: {path}")
         elif self.color_name == "Pink":
-            path = bfs_search(MAP, start, destination)
-            ghost_speed *= 1.2
+            path = backtrack(MAP, start, destination, possible_moves)
+            ghost_speed *= 1.07
 
         if not path:
             print(f"Ghost {self.color_name} could not find a path to Pac-Man.")
