@@ -1,15 +1,15 @@
 from collections import deque
 
 def bfs_search(grid, start, destination):
-    rows, cols = len(grid), len(grid[0])  # Lấy chiều dài và chiều rộng của ma trận
-    queue = deque([(start, [start])])  # Khởi tạo hàng đợi với phần tử đầu tiên là start và đường đi chỉ chứa start
-    visited = set()  # Set để lưu các vị trí đã thăm
-    visited.add(tuple(start))  # Đánh dấu start là đã thăm
+    rows, cols = len(grid), len(grid[0])
+    queue = deque([(start, [start])])
+    visited = set()
+    visited.add(tuple(start))
 
-    #directions = [(-1, 0), (0, -1), (1, 0), (0, 1)]  # 4 hướng di chuyển: trên, trái, dưới, phải
-    directions = [(0, -1), (-1, 0), (0, 1), (1, 0)]  # 4 hướng di chuyển: trên, trái, dưới, phải
+
+    directions = [(0, -1), (-1, 0), (0, 1), (1, 0)]
     while queue:
-        (current, path) = queue.popleft()  # Lấy phần tử đầu tiên ra khỏi hàng đợi
+        (current, path) = queue.popleft()  
 
         # Kiểm tra nếu đã đến đích
         if current == destination:

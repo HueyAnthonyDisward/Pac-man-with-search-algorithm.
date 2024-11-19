@@ -20,7 +20,7 @@ def ids_search(grid, start, destination):
         if f_cost > depth_limit:
             return f_cost
 
-        # Nếu đến đích, trả về đường đi
+
         if current == destination:
             return path
 

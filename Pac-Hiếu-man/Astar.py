@@ -10,7 +10,7 @@ def a_star_search(grid, start, destination):
     heapq.heappush(open_list, (0, start))  # (f_score, node)
     g_scores = {start: 0}  # Chi phí từ start đến mỗi node
     f_scores = {start: heuristic(start, destination)}  # f_score = g_score + h_score
-    came_from = {}  # Truy vết đường đi
+    came_from = {}
 
     # Các hướng di chuyển: lên, trái, xuống, phải
     directions = [(-1, 0), (0, -1), (1, 0), (0, 1)]

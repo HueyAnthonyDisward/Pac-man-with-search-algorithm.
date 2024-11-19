@@ -157,4 +157,3 @@ class World:
             if pressed_key[pygame.K_r]:
                 self.game_over = False
                 self.restart_level()
-

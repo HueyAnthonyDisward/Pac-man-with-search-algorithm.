@@ -5,6 +5,8 @@ from bfs import bfs_search
 from bestfs import best_first_search
 from Astar import a_star_search
 from ids import ids_search
+from Local import ghost_hill_climbing
+from dfs import dfs_search
 
 COLOR_NAMES = {
     (255, 0, 0): "Red",
@@ -63,10 +65,12 @@ class Ghost(pygame.sprite.Sprite):
             ghost_speed *= 1.1
         elif self.color_name == "Sky Blue":
             path = ids_search(MAP, start, destination)
-            ghost_speed *= 1.5
+            ghost_speed *= 1.07
         elif self.color_name == "Orange":
-            path = a_star_search(MAP, start, destination)
-            ghost_speed *= 1.05
+            path = ghost_hill_climbing(MAP, start, destination)
+            ghost_speed *= 0.9
+            if path:
+                print(f"Orange Ghost Path: {path}")
         elif self.color_name == "Pink":
             path = bfs_search(MAP, start, destination)
             ghost_speed *= 1.2
@@ -82,6 +86,7 @@ class Ghost(pygame.sprite.Sprite):
                 dy = target_y - self.rect.y
 
                 # Tính toán bước di chuyển hợp lý trên trục x hoặc y
+                # Tính toán bước di chuyển
                 move_x = ghost_speed if dx > 0 else -ghost_speed if dx < 0 else 0
                 move_y = ghost_speed if dy > 0 else -ghost_speed if dy < 0 else 0
 
@@ -89,12 +94,11 @@ class Ghost(pygame.sprite.Sprite):
                 if move_x != 0 and not self.is_collide(move_x, 0, walls_collide_list):
                     self.rect.move_ip(move_x, 0)
                     self.update_direction(move_x, 0)
-                # Nếu trục x bị chặn, thử di chuyển theo trục y
                 elif move_y != 0 and not self.is_collide(0, move_y, walls_collide_list):
                     self.rect.move_ip(0, move_y)
                     self.update_direction(0, move_y)
                 else:
-                    # Thử di chuyển một đoạn nhỏ hơn nếu cả hai trục đều bị chặn
+                    # Nếu không thể di chuyển theo cả hai trục, thử bước di chuyển nhỏ hơn
                     if dx != 0 and not self.is_collide(dx // 2, 0, walls_collide_list):
                         self.rect.move_ip(dx // 2, 0)
                     elif dy != 0 and not self.is_collide(0, dy // 2, walls_collide_list):
@@ -110,7 +114,6 @@ class Ghost(pygame.sprite.Sprite):
 
     def is_collide(self, dx, dy, walls_collide_list):
         tmp_rect = self.rect.move(dx, dy)
-
         return tmp_rect.collidelist(walls_collide_list) != -1
 
     def update_direction(self, dx, dy):
