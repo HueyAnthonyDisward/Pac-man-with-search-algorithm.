@@ -4,6 +4,7 @@ from settings import CHAR_SIZE, PLAYER_SPEED
 from animation import import_sprite
 
 
+
 class Pac(pygame.sprite.Sprite):
     def __init__(self, row, col):
         super().__init__()
@@ -28,7 +29,7 @@ class Pac(pygame.sprite.Sprite):
         self.direction = (0, 0)
         # pac status
         self.status = "idle"
-        self.life = 3
+        self.life = 10
         self.pac_score = 0
 
         self.previous_position = (self.rect.x, self.rect.y)

@@ -7,7 +7,7 @@ from Astar import a_star_search
 from ids import ids_search
 from Local import simulated_annealing
 from dfs import dfs_search
-from AC3 import backtrack,ac3
+from AC3 import backtrack_with_ac3
 COLOR_NAMES = {
     (255, 0, 0): "Red",
     (135, 206, 235): "Sky Blue",
@@ -56,26 +56,27 @@ class Ghost(pygame.sprite.Sprite):
         self.rect = self.image.get_rect(topleft=(self.rect.x, self.rect.y))
 
     def update(self, walls_collide_list, pacman_position, ghost_speed=GHOST_SPEED):
+        # Xác định vị trí bắt đầu (con ma) và đích (Pacman)
         start = (self.rect.y // CHAR_SIZE, self.rect.x // CHAR_SIZE)
         destination = (pacman_position[1] // CHAR_SIZE, pacman_position[0] // CHAR_SIZE)
-        possible_moves = ac3(MAP, start, destination)
 
-        # Chọn thuật toán tìm đường dựa trên màu của con ma
+
         if self.color_name == "Red":
             path = best_first_search(MAP, start, destination)
-            ghost_speed *= 0.1
+            ghost_speed *= 1.07
         elif self.color_name == "Sky Blue":
             path = ids_search(MAP, start, destination)
-            ghost_speed *= 0.1
+            ghost_speed *= 1.07
         elif self.color_name == "Orange":
             path = simulated_annealing(MAP, start, destination)
-            ghost_speed *= 0.1
-            if path:
-                print(f"Orange Ghost Path: {path}")
-        elif self.color_name == "Pink":
-            path = backtrack(MAP, start, destination, possible_moves)
             ghost_speed *= 1.07
+        elif self.color_name == "Pink":
+            path = backtrack_with_ac3(MAP, start, destination)
+            ghost_speed *= 1.07
+            if path:
+                print(f"Pink Ghost Path: {path}")  # In đường đi của ma màu Pink
 
+        # Kiểm tra nếu không tìm thấy đường đi
         if not path:
             print(f"Ghost {self.color_name} could not find a path to Pac-Man.")
         else:
@@ -87,7 +88,6 @@ class Ghost(pygame.sprite.Sprite):
                 dy = target_y - self.rect.y
 
                 # Tính toán bước di chuyển hợp lý trên trục x hoặc y
-                # Tính toán bước di chuyển
                 move_x = ghost_speed if dx > 0 else -ghost_speed if dx < 0 else 0
                 move_y = ghost_speed if dy > 0 else -ghost_speed if dy < 0 else 0
 
@@ -107,11 +107,11 @@ class Ghost(pygame.sprite.Sprite):
                     else:
                         print(f"Ghost {self.color_name} is stuck at ({self.rect.x}, {self.rect.y})")
 
-            # Cập nhật hình ảnh và vị trí
-            self._animate()
-            self.current_position = (self.rect.y // CHAR_SIZE, self.rect.x // CHAR_SIZE)
-            if self.current_position != self.previous_position:
-                self.previous_position = self.current_position
+                # Cập nhật hình ảnh và vị trí
+                self._animate()
+                self.current_position = (self.rect.y // CHAR_SIZE, self.rect.x // CHAR_SIZE)
+                if self.current_position != self.previous_position:
+                    self.previous_position = self.current_position
 
     def is_collide(self, dx, dy, walls_collide_list):
         tmp_rect = self.rect.move(dx, dy)
