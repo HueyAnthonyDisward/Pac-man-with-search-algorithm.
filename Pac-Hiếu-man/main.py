@@ -2,6 +2,7 @@ import pygame
 import sys
 from settings import WIDTH, HEIGHT, NAV_HEIGHT
 from world import World
+from worldRL import WorldRL
 
 # Khởi tạo Pygame
 pygame.init()
@@ -34,22 +35,42 @@ buttons = [
 ]
 
 # Lớp Main cho chế độ Player
+# Lớp Main cho chế độ Player
 class Main:
     def __init__(self, screen):
         self.screen = screen
         self.FPS = pygame.time.Clock()
 
     def main(self):
-        world = World(self.screen)
+        world = World(self.screen)  # Sử dụng World cho chế độ Player
         while True:
             self.screen.fill("black")
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     sys.exit()
-            world.update()
+            world.update()  # Gọi hàm update của lớp World
             pygame.display.update()
             self.FPS.tick(30)
+
+# Lớp Main cho chế độ Reinforcement Learning
+class ReinforcementMain:
+    def __init__(self, screen):
+        self.screen = screen
+        self.FPS = pygame.time.Clock()
+
+    def main(self):
+        world_rl = WorldRL(self.screen)  # Sử dụng WorldRL cho chế độ Reinforcement Learning
+        while True:
+            self.screen.fill("black")
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+            world_rl.update()  # Gọi hàm update của lớp WorldRL
+            pygame.display.update()
+            self.FPS.tick(30)
+
 
 # Hàm vẽ nút
 def draw_button(text, x, y):
@@ -61,12 +82,14 @@ def draw_button(text, x, y):
 
 # Hàm bắt đầu chế độ Player
 def start_player_mode():
-    play = Main(screen)
+    play = Main(screen)  # Khởi tạo Main cho chế độ Player
     play.main()
 
-# Hàm bắt đầu trò chơi với chế độ Reinforcement Learning (placeholder)
+# Hàm bắt đầu chế độ Reinforcement Learning
 def start_reinforcement_mode():
-    print("Chế độ Reinforcement Learning hiện đang được phát triển!")
+    reinforcement = ReinforcementMain(screen)  # Khởi tạo ReinforcementMain
+    reinforcement.main()
+
 
 # Hàm xử lý sự kiện khi nhấn nút
 def handle_click(mouse_pos):
@@ -76,9 +99,10 @@ def handle_click(mouse_pos):
         if WIDTH // 2 - button_width // 2 < x < WIDTH // 2 + button_width // 2 and \
                 button_y < y < button_y + button_height:
             if mode == "Player":
-                start_player_mode()
+                start_player_mode()  # Chạy chế độ Player
             elif mode == "Reinforcement":
-                start_reinforcement_mode()
+                start_reinforcement_mode()  # Chạy chế độ Reinforcement Learning
+
 
 # Hàm vẽ màn hình chính
 def main_menu():
@@ -110,9 +134,9 @@ def game_loop():
                 running = False
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:  # Kiểm tra nếu là click chuột trái
-                    handle_click(pygame.mouse.get_pos())
+                    handle_click(pygame.mouse.get_pos())  # Xử lý sự kiện click
 
-        main_menu()
+        main_menu()  # Hiển thị màn hình chính
 
     pygame.quit()
     sys.exit()
