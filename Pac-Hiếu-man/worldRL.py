@@ -123,6 +123,9 @@ class WorldRL:
         self.display.show_level(self.game_level)
         self.display.show_score(self.player.sprite.pac_score)
 
+        # Vẽ Pac-Man lên màn hình
+        self.player.draw(self.screen)  # <<<<< Vẽ Pac-Man ở đây
+
         # Vẽ Ghosts lên màn hình
         self.ghosts.draw(self.screen)
 
@@ -143,6 +146,7 @@ class WorldRL:
         done = self.game_over  # Trả về True nếu trò chơi kết thúc
         state = self.player.sprite.get_position()  # Hoặc một state nào đó từ game, ví dụ vị trí Pac-Man
         return state, reward, done
+
 
 
 

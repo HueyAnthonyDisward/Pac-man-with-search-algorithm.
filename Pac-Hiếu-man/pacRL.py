@@ -29,6 +29,7 @@ class PacRL(pygame.sprite.Sprite):
         self.current_animation = self.animations["idle"]
 
 
+
         # Di chuyển và trạng thái
         self.speed = PLAYER_SPEED
         self.directions = {
