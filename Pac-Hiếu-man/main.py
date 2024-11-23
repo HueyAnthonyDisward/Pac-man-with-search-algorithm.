@@ -53,22 +53,41 @@ class Main:
             pygame.display.update()
             self.FPS.tick(30)
 
-# Lớp Main cho chế độ Reinforcement Learning
+
 class ReinforcementMain:
     def __init__(self, screen):
         self.screen = screen
         self.FPS = pygame.time.Clock()
 
     def main(self):
-        world_rl = WorldRL(self.screen)  # Sử dụng WorldRL cho chế độ Reinforcement Learning
+        print("Starting RL Mode")  # Thông báo khi bắt đầu chế độ RL
+
+        # Tạo một đối tượng WorldRL
+        action_space = 4  # Xác định số lượng hành động (ví dụ: trái, phải, lên, xuống)
+        world_rl = WorldRL(self.screen, action_space)  # Khởi tạo WorldRL với action_space = 4
+
         while True:
-            self.screen.fill("black")
+            self.screen.fill("black")  # Xóa màn hình mỗi vòng lặp
+
+            # Kiểm tra các sự kiện
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     sys.exit()
-            world_rl.update()  # Gọi hàm update của lớp WorldRL
+
+            # Thực hiện hành động từ RL hoặc mặc định (0: giữ nguyên)
+            action = 0  # Tùy chỉnh với mô hình RL để lấy hành động tốt nhất
+            state, reward, done = world_rl.update(action)
+
+            # Kiểm tra nếu trò chơi kết thúc
+            if done:
+                print("Game Over!")
+                break
+
+            # Cập nhật hiển thị màn hình
             pygame.display.update()
+
+            # Điều chỉnh FPS
             self.FPS.tick(30)
 
 

@@ -29,7 +29,7 @@ class Pac(pygame.sprite.Sprite):
         self.direction = (0, 0)
         # pac status
         self.status = "idle"
-        self.life = 10
+        self.life = 3
         self.pac_score = 0
 
         self.previous_position = (self.rect.x, self.rect.y)

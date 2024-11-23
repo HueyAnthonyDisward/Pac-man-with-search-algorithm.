@@ -1,17 +1,14 @@
 import pygame
 import time
-import torch
-import numpy as np
 from settings import HEIGHT, WIDTH, NAV_HEIGHT, CHAR_SIZE, MAP
 from pacRL import PacRL
+from cell import Cell
 from berry import Berry
 from ghost import Ghost
-from cell import Cell
-from RlAgent import ReplayBuffer, DQN
 from display import Display
 
 class WorldRL:
-    def __init__(self, screen):
+    def __init__(self, screen, action_space):
         self.screen = screen
         self.player = pygame.sprite.GroupSingle()
         self.ghosts = pygame.sprite.Group()
@@ -22,127 +19,130 @@ class WorldRL:
         self.reset_pos = False
         self.player_score = 0
         self.game_level = 1
-
-        # RL-specific components
-        self.action_space = 4  # Số hành động: Trái, Phải, Lên, Xuống
-        self.state_size = 10  # Kích thước của vector trạng thái
-        self.q_network = DQN(self.state_size, self.action_space)
-        self.target_network = DQN(self.state_size, self.action_space)
-        self.replay_buffer = ReplayBuffer(10000)
-        self.batch_size = 32
-        self.gamma = 0.99
-        self.optimizer = torch.optim.Adam(self.q_network.parameters(), lr=0.001)
-
+        self.action_space = action_space
         self._generate_world()
 
-
     def _generate_world(self):
-        # Tạo các đối tượng trên bản đồ
+        """Tạo thế giới ban đầu từ bản đồ."""
         for y_index, col in enumerate(MAP):
             for x_index, char in enumerate(col):
                 if char == "1":  # Tường
                     self.walls.add(Cell(x_index, y_index, CHAR_SIZE, CHAR_SIZE))
-                elif char == " ":  # Berry nhỏ
+                elif char == " ":  # Đường đi chứa berries
                     self.berries.add(Berry(x_index, y_index, CHAR_SIZE // 4))
-                elif char == "B":  # Berry lớn (power-up)
+                elif char == "B":  # Berry lớn
                     self.berries.add(Berry(x_index, y_index, CHAR_SIZE // 2, is_power_up=True))
-                elif char == "s":
-                    self.ghosts.add(Ghost(x_index, y_index, "skyblue"))
-                elif char == "p":
-                    self.ghosts.add(Ghost(x_index, y_index, "pink"))
-                elif char == "o":
-                    self.ghosts.add(Ghost(x_index, y_index, "orange"))
-                elif char == "r":
-                    self.ghosts.add(Ghost(x_index, y_index, "red"))
-                elif char == "P":  # Pac-Man RL
+                elif char in "spro":  # Ghosts
+                    color_map = {"s": "skyblue", "p": "pink", "r": "red", "o": "orange"}
+                    self.ghosts.add(Ghost(x_index, y_index, color_map[char]))
+                elif char == "P":  # Pac-Man
                     self.player.add(PacRL(x_index, y_index, self.action_space))
 
         self.walls_collide_list = [wall.rect for wall in self.walls.sprites()]
 
-    def step(self, action):
-        """Thực hiện một hành động và trả về (trạng thái tiếp theo, phần thưởng, kết thúc)."""
-        self.player.sprite.take_action(action, self.walls_collide_list)
-        self.update()
-        reward = self._calculate_reward()
-        done = self.game_over
-        next_state = self.player.sprite.get_state(self.walls, self.berries, self.ghosts)
-        return next_state, reward, done
-
-    def _calculate_reward(self):
-        """Tính toán phần thưởng dựa trên trạng thái hiện tại."""
-        reward = 0
-        if len(self.berries) == 0:  # Ăn hết berries
-            reward += 1000
-        if self.reset_pos:  # Bị ma bắt
-            reward -= 100
-        if self.player.sprite.immune:  # Ăn được ma khi có power-up
-            reward += 200
-        return reward
-
-    def train_step(self):
-        """Thực hiện một bước huấn luyện trên replay buffer."""
-        if len(self.replay_buffer) < self.batch_size:
-            return
-
-        # Lấy minibatch từ replay buffer
-        batch = self.replay_buffer.sample(self.batch_size)
-        states, actions, rewards, next_states, dones = map(np.array, zip(*batch))
-
-        # Chuyển đổi dữ liệu sang tensor
-        states = torch.tensor(states, dtype=torch.float32)
-        actions = torch.tensor(actions, dtype=torch.long)
-        rewards = torch.tensor(rewards, dtype=torch.float32)
-        next_states = torch.tensor(next_states, dtype=torch.float32)
-        dones = torch.tensor(dones, dtype=torch.float32)
-
-        # Dự đoán Q-values cho trạng thái hiện tại và tiếp theo
-        q_values = self.q_network(states)
-        next_q_values = self.target_network(next_states)
-
-        # Chọn Q-value cho hành động đã thực hiện
-        q_value = q_values.gather(1, actions.unsqueeze(1)).squeeze(1)
-
-        # Tính giá trị mục tiêu
-        max_next_q_values = next_q_values.max(1)[0]
-        target = rewards + self.gamma * max_next_q_values * (1 - dones)
-
-        # Tính toán loss và cập nhật mạng nơ-ron
-        loss = torch.nn.functional.mse_loss(q_value, target.detach())
-        self.optimizer.zero_grad()
-        loss.backward()
-        self.optimizer.step()
-
-    def update(self):
-        if not self.game_over:
-            self.player.sprite.update(self.walls_collide_list)  # Truyền walls_collide_list vào
-            pac_position = self.player.sprite.get_position()
-
-            # Cập nhật vị trí của Ghost
-            for ghost in self.ghosts.sprites():
-                ghost.update(self.walls_collide_list, pac_position)
-
-        # Kiểm tra trạng thái trò chơi
-        if len(self.berries) == 0:  # Chuyển sang level mới
-            self.game_level += 1
-            self.generate_new_level()
-
-        if self.player.sprite.life <= 0:  # Kết thúc trò chơi
-            self.game_over = True
-
-        # Vẽ màn hình
-        [wall.update(self.screen) for wall in self.walls.sprites()]
-        [berry.update(self.screen) for berry in self.berries.sprites()]
-        self.ghosts.draw(self.screen)
-        self.player.draw(self.screen)
-        self.display.game_over() if self.game_over else None
-
     def generate_new_level(self):
-        """Tạo level mới với các berries được tái tạo."""
-        self.berries.empty()
+        """Tạo cấp độ mới."""
         for y_index, col in enumerate(MAP):
             for x_index, char in enumerate(col):
-                if char == " ":
+                if char == " ":  # Đường đi chứa berries
                     self.berries.add(Berry(x_index, y_index, CHAR_SIZE // 4))
-                elif char == "B":
+                elif char == "B":  # Berry lớn
                     self.berries.add(Berry(x_index, y_index, CHAR_SIZE // 2, is_power_up=True))
         time.sleep(2)
+
+    def restart_level(self):
+        """Khởi động lại cấp độ hiện tại."""
+        self.berries.empty()
+        [ghost.move_to_start_pos() for ghost in self.ghosts.sprites()]
+        self.game_level = 1
+        self.player.sprite.pac_score = 0
+        self.player.sprite.life = 10
+        self.player.sprite.move_to_start_pos()
+        self.generate_new_level()
+
+    def _check_game_state(self):
+        """Kiểm tra trạng thái trò chơi."""
+        if self.player.sprite.life <= 0:
+            self.game_over = True
+        elif len(self.berries) == 0 and self.player.sprite.life > 0:
+            self.game_level += 1
+            for ghost in self.ghosts.sprites():
+                ghost.move_speed += self.game_level
+                ghost.move_to_start_pos()
+            self.player.sprite.move_to_start_pos()
+            self.generate_new_level()
+
+    def update(self, action=None):
+        """Cập nhật trạng thái trò chơi và trả về state, reward, done."""
+        if not self.game_over:
+            if action is not None:
+                # Thực hiện hành động RL
+                reward = self.player.sprite.take_action(
+                    action, self.walls_collide_list, self.berries.sprites(), self.ghosts.sprites()
+                )
+            else:
+                reward = 0  # Không thực hiện hành động nếu `action` là None
+
+            # Pac-Man ăn berries
+            for berry in self.berries.sprites():
+                if self.player.sprite.rect.colliderect(berry.rect):
+                    if berry.power_up:
+                        self.player.sprite.immune_time = 150  # Thời gian Power-Up
+                        self.player.sprite.pac_score += 50
+                    else:
+                        self.player.sprite.pac_score += 10
+                    berry.kill()
+
+            # Pac-Man chạm vào Ghosts
+            for ghost in self.ghosts.sprites():
+                if self.player.sprite.rect.colliderect(ghost.rect):
+                    if not self.player.sprite.immune:
+                        self.player.sprite.life -= 1
+                        self.reset_pos = True
+                        break
+                    else:
+                        ghost.move_to_start_pos()
+                        self.player.sprite.pac_score += 100
+
+        pac_position = self.player.sprite.get_position()
+
+        for ghost in self.ghosts.sprites():
+            ghost.update(self.walls_collide_list, pac_position)
+
+        # Kiểm tra trạng thái trò chơi
+        self._check_game_state()
+
+        # Cập nhật các đối tượng
+        [wall.update(self.screen) for wall in self.walls.sprites()]  # Cập nhật tường (nếu có)
+        [berry.update(self.screen) for berry in self.berries.sprites()]  # Cập nhật berries (nếu có)
+        self.ghosts.update(self.walls_collide_list, pac_position)  # Cập nhật ma quái
+        self.player.update()  # Cập nhật Pac-Man
+
+        # Hiển thị thông tin lên màn hình
+        self.display.show_life(self.player.sprite.life)
+        self.display.show_level(self.game_level)
+        self.display.show_score(self.player.sprite.pac_score)
+
+        # Vẽ Ghosts lên màn hình
+        self.ghosts.draw(self.screen)
+
+        # Đặt lại vị trí khi Pac-Man bị bắt
+        if self.reset_pos and not self.game_over:
+            [ghost.move_to_start_pos() for ghost in self.ghosts.sprites()]
+            self.player.sprite.move_to_start_pos()
+            self.reset_pos = False
+
+        # Kiểm tra nếu người chơi nhấn phím 'r' để khởi động lại sau khi game over
+        if self.game_over:
+            pressed_key = pygame.key.get_pressed()
+            if pressed_key[pygame.K_r]:
+                self.game_over = False
+                self.restart_level()
+
+        # Trả về state, reward và done
+        done = self.game_over  # Trả về True nếu trò chơi kết thúc
+        state = self.player.sprite.get_position()  # Hoặc một state nào đó từ game, ví dụ vị trí Pac-Man
+        return state, reward, done
+
+
+
