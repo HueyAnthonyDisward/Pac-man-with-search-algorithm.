@@ -21,6 +21,7 @@ class PacRL(pygame.sprite.Sprite):
         self.image = pygame.Surface((CHAR_SIZE, CHAR_SIZE))
         self.image.fill((255, 255, 0))  # Màu vàng tượng trưng cho Pac-Man
         self.visited_positions = set()  # Tập hợp để lưu các vị trí đã đi qua
+        self.total_score = 0
 
         # Hoạt ảnh
         self._import_character_assets()
@@ -66,6 +67,48 @@ class PacRL(pygame.sprite.Sprite):
         """Lưu mô hình RL vào tệp .pth."""
         torch.save(self.q_network.state_dict(), file_path)
         print(f"Model saved to {file_path}")
+
+    def _import_character_assets(self):
+        character_path = "assets/pac/"
+        self.animations = {
+            "up": [],
+            "down": [],
+            "left": [],
+            "right": [],
+            "idle": [],
+            "power_up": []
+        }
+        for animation in self.animations.keys():
+            full_path = character_path + animation
+            self.animations[animation] = import_sprite(full_path)
+
+    def animate(self, pressed_key, walls_collide_list):
+        """Xử lý chuyển động và hoạt ảnh của Pac-Man"""
+        animation = self.animations[self.status]
+        # loop over frame index
+        self.frame_index += self.animation_speed
+        if self.frame_index >= len(animation):
+            self.frame_index = 0
+        image = animation[int(self.frame_index)]
+        self.image = pygame.transform.scale(image, (CHAR_SIZE, CHAR_SIZE))
+        self.walls_collide_list = walls_collide_list
+
+        for key, key_value in self.keys.items():
+            if pressed_key[key_value] and not self._is_collide(*self.directions[key]):
+                self.direction = self.directions[key]
+                self.status = key if not self.immune else "power_up"
+                break
+
+        if not self._is_collide(*self.direction):
+            self.rect.move_ip(self.direction)
+            self.status = self.status if not self.immune else "power_up"
+            if (self.rect.x, self.rect.y) != self.previous_position:
+                self.previous_position = (self.rect.x, self.rect.y)
+                self.position = (self.rect.x, self.rect.y)  # Cập nhật lại tọa độ thực tế
+                self.log_position()
+
+        if self._is_collide(*self.direction):
+            self.status = "idle" if not self.immune else "power_up"
 
     def load_model(self, file_path="pac_rl_model.pth"):
         """Tải mô hình RL từ tệp .pth."""
@@ -151,7 +194,14 @@ class PacRL(pygame.sprite.Sprite):
                 reward -= 100
                 self.reset_position()  # Đưa Pac-Man về vị trí ban đầu
 
+        self.total_score += reward  # Cộng dồn điểm vào tổng điểm của mạng
         return reward
+
+    def end_game(self):
+        """Hàm được gọi khi kết thúc một mạng."""
+        print(f"Game Over! Total Score: {self.total_score}")
+        # Reset tổng điểm sau khi kết thúc mạng
+        self.total_score = 0
 
     def take_action(self, action, walls_collide_list, berries, ghosts):
         """
@@ -174,7 +224,9 @@ class PacRL(pygame.sprite.Sprite):
         # Tính toán phần thưởng
         reward = self.calculate_reward(berries, ghosts)
 
-        # Cập nhật trạng thái
+        if self.life <= 0:
+            self.end_game()
+            # Cập nhật trạng thái
         self.previous_position = (self.rect.x, self.rect.y)
         return reward
 

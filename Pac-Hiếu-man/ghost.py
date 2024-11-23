@@ -63,16 +63,16 @@ class Ghost(pygame.sprite.Sprite):
 
         if self.color_name == "Red":
             path = best_first_search(MAP, start, destination)
-            ghost_speed *= 0.3
+            ghost_speed *= 1
         elif self.color_name == "Sky Blue":
             path = ids_search(MAP, start, destination)
-            ghost_speed *= 0.3
+            ghost_speed *= 1
         elif self.color_name == "Orange":
             path = simulated_annealing(MAP, start, destination)
-            ghost_speed *= 0.3
+            ghost_speed *= 1
         elif self.color_name == "Pink":
             path = backtrack_with_ac3(MAP, start, destination)
-            ghost_speed *= 0.3
+            ghost_speed *= 1
             #if path:
                 #print(f"Pink Ghost Path: {path}")  # In đường đi của ma màu Pink
 
