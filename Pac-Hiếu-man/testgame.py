@@ -1,96 +1,122 @@
-import math
+import random
+import numpy as np
+import pygame
+from settings import CHAR_SIZE, PLAYER_SPEED, MAP, WIDTH, HEIGHT
+from ghost import Ghost
+from berry import Berry
+from cell import Cell
 
+class PacmanAgent:
+    def __init__(self, map):
+        self.map = map
+        self.actions = ['up', 'down', 'left', 'right']
+        self.q_table = np.zeros((len(map), len(map[0]), len(self.actions)))
+        self.alpha = 0.1
+        self.gamma = 0.9
+        self.epsilon = 0.1
+        self.position = (1, 1)
 
+    def get_state(self):
+        return self.position
 
-MAP = [
+    def choose_action(self, state):
+        if random.uniform(0, 1) < self.epsilon:
+            return random.choice(self.actions)
+        else:
+            state_x, state_y = state
+            q_values = self.q_table[state_x][state_y]
+            max_q_value = np.max(q_values)
+            best_actions = [self.actions[i] for i in range(len(self.actions)) if q_values[i] == max_q_value]
+            return random.choice(best_actions)
 
-    [' ',' ',' ',' ',' ','1',' ','1','s','r','o','1',' ','1',' ',' ',' ',' ',' '],
-    ['1',' ',' ',' ','1',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ','P','1'],
-]
+    def update_q_value(self, state, action, reward, next_state):
+        state_x, state_y = state
+        next_state_x, next_state_y = next_state
+        action_index = self.actions.index(action)
+        max_future_q = np.max(self.q_table[next_state_x][next_state_y])
+        current_q = self.q_table[state_x][state_y][action_index]
+        new_q = current_q + self.alpha * (reward + self.gamma * max_future_q - current_q)
+        self.q_table[state_x][state_y][action_index] = new_q
 
+    def move(self, action):
+        x, y = self.position
+        if action == 'up':
+            self.position = (x - 1, y)
+        elif action == 'down':
+            self.position = (x + 1, y)
+        elif action == 'left':
+            self.position = (x, y - 1)
+        elif action == 'right':
+            self.position = (x, y + 1)
 
+    def reset(self):
+        self.position = (1, 1)
 
-def manhattan_distance(pos1, pos2):
-    """Tính khoảng cách Manhattan giữa hai vị trí."""
-    return abs(pos1[0] - pos2[0]) + abs(pos1[1] - pos2[1])
+class PacmanEnvironment:
+    def __init__(self):
+        self.agent = PacmanAgent(MAP)
+        self.ghosts = [Ghost(5, 5, 'red')]
+        self.berries = [Berry(3, 3, 4)]
+        self.map = MAP
+        pygame.init()
+        self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
+        self.clock = pygame.time.Clock()
 
+    def get_reward(self, state):
+        x, y = state
+        for berry in self.berries:
+            if (berry.abs_x == x * CHAR_SIZE) and (berry.abs_y == y * CHAR_SIZE):
+                self.berries.remove(berry)
+                return 10
+        for ghost in self.ghosts:
+            if ghost.get_position() == state:
+                return -10
+        return -1
 
-def ghost_local_search(grid, ghost_position, pacman_position):
-    """
-    Thuật toán Local Search cho ghost.
-    Ghost tìm đường tới pacman dựa trên khoảng cách Manhattan.
+    def step(self, action):
+        state = self.agent.get_state()
+        self.agent.move(action)
+        new_state = self.agent.get_state()
+        reward = self.get_reward(new_state)
+        self.agent.update_q_value(state, action, reward, new_state)
+        return new_state, reward
 
-    grid: Ma trận lưới trò chơi (0 là ô trống, 1 là tường).
-    ghost_position: Vị trí hiện tại của ghost (dòng, cột).
-    pacman_position: Vị trí của pacman (dòng, cột).
+    def reset(self):
+        self.agent.reset()
+        return self.agent.get_state()
 
-    Trả về bước đi tiếp theo của ghost dưới dạng (row, col).
-    """
-    rows, cols = len(grid), len(grid[0])
-    directions = [(0, -1), (-1, 0), (0, 1), (1, 0)]  # Trái, Lên, Phải, Xuống
-    best_move = None
-    min_distance = math.inf
+    def draw(self):
+        self.screen.fill((0, 0, 0))  # Lấp đầy màn hình bằng màu đen
 
-    for direction in directions:
-        next_row = ghost_position[0] + direction[0]
-        next_col = ghost_position[1] + direction[1]
+        # Vẽ Pacman
+        pacman_x, pacman_y = self.agent.get_state()
+        pygame.draw.rect(self.screen, (255, 255, 0), pygame.Rect(pacman_x * CHAR_SIZE, pacman_y * CHAR_SIZE, CHAR_SIZE, CHAR_SIZE))
 
-        # Kiểm tra xem bước tiếp theo có hợp lệ không
-        if 0 <= next_row < rows and 0 <= next_col < cols and grid[next_row][next_col] != '1':
-            next_position = (next_row, next_col)
-            # Tính khoảng cách tới Pacman
-            distance = manhattan_distance(next_position, pacman_position)
+        # Vẽ các ma
+        for ghost in self.ghosts:
+            ghost_x, ghost_y = ghost.get_position()
+            pygame.draw.rect(self.screen, (255, 0, 0), pygame.Rect(ghost_x * CHAR_SIZE, ghost_y * CHAR_SIZE, CHAR_SIZE, CHAR_SIZE))
 
-            # Cập nhật bước đi tốt nhất
-            if distance < min_distance:
-                min_distance = distance
-                best_move = next_position
+        # Vẽ các quả Berry
+        for berry in self.berries:
+            berry_x, berry_y = berry.get_position()
+            pygame.draw.circle(self.screen, (0, 255, 0), (berry_x * CHAR_SIZE + CHAR_SIZE // 2, berry_y * CHAR_SIZE + CHAR_SIZE // 2), CHAR_SIZE // 4)
 
-    return best_move if best_move else ghost_position
+        pygame.display.flip()  # Cập nhật màn hình
 
+def train_agent():
+    environment = PacmanEnvironment()
+    for episode in range(1000):
+        state = environment.reset()
+        done = False
+        while not done:
+            action = environment.agent.choose_action(state)
+            next_state, reward = environment.step(action)
+            state = next_state
+            environment.draw()  # Vẽ lại tất cả các thực thể sau mỗi bước
+            if reward == 10 or reward == -10:  # Nếu ăn berry hoặc bị ma bắt
+                done = True
+            environment.clock.tick(10)  # Điều chỉnh tốc độ khung hình
 
-def find_path_to_pacman(grid):
-    """
-    Tìm đường đi từ vị trí R (ghost) đến P (Pacman) trên bản đồ sử dụng local search.
-
-    grid: Bản đồ trò chơi (2D list).
-
-    Trả về: Danh sách các bước đi từ R đến P.
-    """
-    # Tìm vị trí của R và P trong bản đồ
-    ghost_position = None
-    pacman_position = None
-    for i, row in enumerate(grid):
-        for j, cell in enumerate(row):
-            if cell == 'r':
-                ghost_position = (i, j)
-            elif cell == 'P':
-                pacman_position = (i, j)
-
-    if not ghost_position or not pacman_position:
-        return "Vị trí ghost hoặc Pacman không tồn tại trên bản đồ!"
-
-    path = [ghost_position]  # Lưu lại các bước di chuyển
-    while ghost_position != pacman_position:
-        # Tìm bước tiếp theo bằng thuật toán local search
-        next_position = ghost_local_search(grid, ghost_position, pacman_position)
-
-        # Nếu không di chuyển được, thoát vòng lặp
-        if next_position == ghost_position:
-            return "Không thể tìm được đường đi đến Pacman!"
-
-        # Cập nhật vị trí ghost và thêm vào đường đi
-        ghost_position = next_position
-        path.append(ghost_position)
-
-    return path
-
-
-# Sử dụng hàm với bản đồ
-path = find_path_to_pacman(MAP)
-if isinstance(path, list):
-    print("Đường đi từ R đến P:")
-    for step in path:
-        print(step)
-else:
-    print(path)
+if __name__ == "__main__":
+    train_agent()
