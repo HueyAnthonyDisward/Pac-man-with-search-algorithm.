@@ -3,7 +3,7 @@ import numpy as np
 import random
 
 # Kích thước của mỗi ô trong bản đồ
-CELL_SIZE = 30
+CELL_SIZE = 21
 # Kích thước màn hình
 WIDTH, HEIGHT = 600, 600
 
@@ -36,7 +36,7 @@ MAP = [
 WALL = '1'
 BERRY = 'B'
 PACMAN = 'P'
-ENEMY = ['r', 'P', 'S', 'O']
+ENEMY = ['r', 'P', 's', 'O']
 
 # Khởi tạo pygame
 pygame.init()
