@@ -1,7 +1,11 @@
+import torch
 import pygame
 import numpy as np
 import random
+import os
 
+
+MODEL_PATH = "q_table.pth"
 # Kích thước của mỗi ô trong bản đồ
 CELL_SIZE = 21
 # Kích thước màn hình
@@ -61,9 +65,11 @@ class PacmanEnv:
     def __init__(self, map_data):
         self.map = map_data
         self.state = self.reset()
+        self.visited = set()  # Set lưu trữ các ô đã được đi qua
+        self.ghost_positions = self.find_ghost_positions()
 
     def reset(self):
-        # Tìm vị trí Pacman trên bản đồ
+        # Tìm vị trí Pacman và ghost trên bản đồ
         for y, row in enumerate(self.map):
             for x, cell in enumerate(row):
                 if cell == PACMAN:
@@ -71,8 +77,42 @@ class PacmanEnv:
                     return (x, y)
         return None
 
+    def find_ghost_positions(self):
+        positions = []
+        for y, row in enumerate(self.map):
+            for x, cell in enumerate(row):
+                if cell in ENEMY:
+                    positions.append((x, y))
+        return positions
+
+    def move_ghosts(self):
+        new_positions = []
+        for ghost_pos in self.ghost_positions:
+            x, y = ghost_pos
+            action = random.choice([0, 1, 2, 3])  # Chọn hành động ngẫu nhiên
+            if action == 0:  # lên
+                new_pos = (x, y - 1)
+            elif action == 1:  # xuống
+                new_pos = (x, y + 1)
+            elif action == 2:  # trái
+                new_pos = (x - 1, y)
+            elif action == 3:  # phải
+                new_pos = (x + 1, y)
+
+            # Chỉ di chuyển ghost nếu vị trí hợp lệ
+            if (
+                0 <= new_pos[1] < len(self.map)
+                and 0 <= new_pos[0] < len(self.map[0])
+                and self.map[new_pos[1]][new_pos[0]] not in [WALL, BERRY, PACMAN]
+            ):
+                new_positions.append(new_pos)
+                self.map[y][x] = ' '  # Xóa vị trí cũ
+                self.map[new_pos[1]][new_pos[0]] = 'r'  # Cập nhật vị trí mới
+            else:
+                new_positions.append(ghost_pos)  # Nếu không di chuyển được, giữ nguyên vị trí
+        self.ghost_positions = new_positions
+
     def step(self, action):
-        # Di chuyển Pacman theo hành động và trả về trạng thái mới
         x, y = self.pacman_pos
         if action == 0:  # lên
             new_pos = (x, y - 1)
@@ -83,109 +123,130 @@ class PacmanEnv:
         elif action == 3:  # phải
             new_pos = (x + 1, y)
 
-        # Kiểm tra nếu new_pos ra ngoài bản đồ hoặc là tường
-        if new_pos[1] < 0 or new_pos[1] >= len(self.map) or new_pos[0] < 0 or new_pos[0] >= len(self.map[0]) or self.map[new_pos[1]][new_pos[0]] == WALL:
-            return self.state, 0, False  # Nếu không di chuyển được, không thay đổi trạng thái
+        # Kiểm tra di chuyển hợp lệ
+        if (
+                new_pos[1] < 0 or new_pos[1] >= len(self.map) or
+                new_pos[0] < 0 or new_pos[0] >= len(self.map[0]) or
+                self.map[new_pos[1]][new_pos[0]] == WALL
+        ):
+            return self.state, -1, False
+
 
         self.pacman_pos = new_pos
         self.state = new_pos
         reward = 0
 
-        # Kiểm tra nếu Pacman ăn berry
+        # Ăn quả berry
         if self.map[new_pos[1]][new_pos[0]] == BERRY:
-            reward = 1
-            self.map[new_pos[1]][new_pos[0]] = ' '  # Xóa quả berry
+            reward += 100
+            print(f"Pacman ate a berry! Reward: {reward}")
+            self.map[new_pos[1]][new_pos[0]] = ' '
 
-        return self.state, reward, False  # Trả lại trạng thái mới và phần thưởng
+        # Thưởng/Phạt khi đi qua ô đã ghé thăm
+        if new_pos in self.visited:
+            reward -= 1
+        else:
+            self.visited.add(new_pos)
 
-    def move_ghosts(self):
-        # Di chuyển ngẫu nhiên các con ma
+        # Cập nhật vị trí Pacman trên bản đồ
+        self.map[y][x] = ' '  # Xóa vị trí cũ
+        self.map[new_pos[1]][new_pos[0]] = PACMAN
+
+        # Di chuyển ghost
+        self.move_ghosts()
+
+        # Kiểm tra va chạm giữa Pacman và ghost
+        if new_pos in self.ghost_positions:
+            reward += -100
+            return self.state, reward, False
+
+        return self.state, reward, True
+
+    def render(self):
+        screen.fill((0, 0, 0))
+
         for y, row in enumerate(self.map):
             for x, cell in enumerate(row):
-                if cell in ENEMY:
-                    new_pos = self.random_move(x, y)
-                    if self.map[new_pos[1]][new_pos[0]] != WALL and self.map[new_pos[1]][new_pos[0]] != PACMAN:
-                        self.map[y][x] = ' '  # Xóa con ma cũ
-                        self.map[new_pos[1]][new_pos[0]] = cell  # Cập nhật vị trí con ma
+                if cell == WALL:
+                    pygame.draw.rect(screen, (0, 0, 255), (x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE))
+                elif cell == BERRY:
+                    screen.blit(berry_img, (x * CELL_SIZE, y * CELL_SIZE))
+                elif cell == PACMAN:
+                    screen.blit(pacman_img, (x * CELL_SIZE, y * CELL_SIZE))
+                elif cell in ENEMY:
+                    screen.blit(enemy_img, (x * CELL_SIZE, y * CELL_SIZE))
 
-    def random_move(self, x, y):
-        directions = [(0, 1), (0, -1), (1, 0), (-1, 0)]  # Di chuyển lên, xuống, trái, phải
-        random_direction = random.choice(directions)
-        return (x + random_direction[0], y + random_direction[1])
-
-
-# Hàm hiển thị game
-def draw_game(env):
-    screen.fill((0, 0, 0))  # Màu nền đen
-
-    # Vẽ map
-    for y, row in enumerate(env.map):
-        for x, cell in enumerate(row):
-            if cell == WALL:
-                pygame.draw.rect(screen, (0, 0, 255),
-                                 pygame.Rect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE))  # Màu xanh cho tường
-            elif cell == BERRY:
-                screen.blit(berry_img, (x * CELL_SIZE, y * CELL_SIZE))  # Vẽ berry
-            elif cell == PACMAN:
-                screen.blit(pacman_img, (x * CELL_SIZE, y * CELL_SIZE))  # Vẽ Pacman
-            elif cell in ENEMY:
-                screen.blit(enemy_img, (x * CELL_SIZE, y * CELL_SIZE))  # Vẽ con ma
-
-    pygame.display.flip()
+        pygame.display.flip()
 
 
-# Q-learning setup
+
+# Q-Learning Agent
 class QLearningAgent:
-    def __init__(self, env, actions):
-        self.env = env
+    def __init__(self, actions, alpha=0.1, gamma=0.9, epsilon=0.1):
         self.actions = actions
-        self.q_table = np.zeros(
-            (len(env.map), len(env.map[0]), len(actions)))  # Q-table với các trạng thái và hành động
-        self.learning_rate = 0.1
-        self.discount_factor = 0.9
-        self.exploration_rate = 1.0
-        self.exploration_decay = 0.995
+        self.alpha = alpha
+        self.gamma = gamma
+        self.epsilon = epsilon
+        self.q_table = {}
+
+    def get_state_key(self, state):
+        return f"{state[0]}_{state[1]}"
 
     def choose_action(self, state):
-        if random.uniform(0, 1) < self.exploration_rate:
-            return random.choice(self.actions)  # Khám phá (exploration)
-        else:
-            return np.argmax(self.q_table[state[1], state[0], :])  # Tận dụng (exploitation)
+        state_key = self.get_state_key(state)
+        if random.uniform(0, 1) < self.epsilon or state_key not in self.q_table:
+            return random.choice(self.actions)
+        return max(self.actions, key=lambda action: self.q_table[state_key][action])
 
-    def learn(self, state, action, reward, next_state):
-        best_next_action = np.argmax(self.q_table[next_state[1], next_state[0], :])
-        td_target = reward + self.discount_factor * self.q_table[next_state[1], next_state[0], best_next_action]
-        td_error = td_target - self.q_table[state[1], state[0], action]
-        self.q_table[state[1], state[0], action] += self.learning_rate * td_error
+    def update_q_table(self, state, action, reward, next_state):
+        state_key = self.get_state_key(state)
+        next_state_key = self.get_state_key(next_state)
+
+        if state_key not in self.q_table:
+            self.q_table[state_key] = {a: 0 for a in self.actions}
+        if next_state_key not in self.q_table:
+            self.q_table[next_state_key] = {a: 0 for a in self.actions}
+
+        old_value = self.q_table[state_key][action]
+        next_max = max(self.q_table[next_state_key].values())
+        self.q_table[state_key][action] = old_value + self.alpha * (reward + self.gamma * next_max - old_value)
+
+    def save_model(self, path):
+        torch.save(self.q_table, path)
+
+    def load_model(self, path):
+        self.q_table = torch.load(path)
 
 
-# Khởi tạo môi trường và agent
+# Training Loop
+actions = [0, 1, 2, 3]  # Các hành động: lên, xuống, trái, phải
+agent = QLearningAgent(actions)
 env = PacmanEnv(MAP)
-agent = QLearningAgent(env, actions=[0, 1, 2, 3])
+total_reward_all_episodes = 0
+# Training 500 episodes
+for episode in range(500):
+    state = env.reset()
+    done = False
+    total_reward = 0
 
-# Main loop
-clock = pygame.time.Clock()
-running = True
+    while not done:
+        action = agent.choose_action(state)
+        next_state, reward, done = env.step(action)
+        agent.update_q_table(state, action, reward, next_state)
+        state = next_state
+        total_reward += reward
 
-while running:
-    action = agent.choose_action(env.state)
-    next_state, reward, done = env.step(action)
-    agent.learn(env.state, action, reward, next_state)
-    env.state = next_state
+        # Render game environment every 10 episodes
+        if episode % 10 == 0:
+            pygame.time.wait(300)
+            env.render()
+    total_reward_all_episodes += total_reward
+    print(f"Episode {episode + 1}: Total Reward = {total_reward}, Total all: {total_reward_all_episodes}")
 
-    # Di chuyển ma
-    env.move_ghosts()
+# Save the trained Q-Table
+agent.save_model("q_table.pth")
 
-    draw_game(env)
+print("Training completed and model saved!")
 
-    # Đợi một chút để game không quá nhanh
-    pygame.time.delay(100)
-
-    # Kiểm tra các sự kiện (ví dụ như nhấn nút thoát)
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
-
-    agent.exploration_rate *= agent.exploration_decay  # Giảm tỷ lệ khám phá theo thời gian
-
+# Quit pygame after rendering
 pygame.quit()
