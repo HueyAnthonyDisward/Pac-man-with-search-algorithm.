@@ -25,11 +25,11 @@ class Ghost(pygame.sprite.Sprite):
         self.abs_y = col * CHAR_SIZE
         self.move_speed = GHOST_SPEED
 
-        # Chuyển đổi màu thành tuple RGB (bỏ alpha để so sánh dễ dàng hơn)
+        # Chuyển đổi màu thành tuple RGB
         self.color = pygame.Color(color)[:3]
         self.color_name = COLOR_NAMES.get(self.color, "Unknown Color")
 
-        # Thông báo màu không xác định nếu không có trong COLOR_NAMES
+
         if self.color_name == "Unknown Color":
             print(f"Unknown color for Ghost: {self.color}")
 
@@ -82,20 +82,21 @@ class Ghost(pygame.sprite.Sprite):
         else:
             if len(path) > 1:
                 # Lấy vị trí tiếp theo trên đường đi và tính toán khoảng cách
-                next_position = path[1]
+                next_position = path[1] #path[1] là đường tiếp theo
                 target_x, target_y = next_position[1] * CHAR_SIZE, next_position[0] * CHAR_SIZE
-                dx = target_x - self.rect.x
+                dx = target_x - self.rect.x # xy của ô tiếp theo trừ đi hiện tại
                 dy = target_y - self.rect.y
 
-                # Tính toán bước di chuyển hợp lý trên trục x hoặc y
+                # dx dy > 0 thì ma đi theo hướng mục tiêu, nếu âm thì đi ngược lại
                 move_x = ghost_speed if dx > 0 else -ghost_speed if dx < 0 else 0
                 move_y = ghost_speed if dy > 0 else -ghost_speed if dy < 0 else 0
 
-                # Kiểm tra di chuyển trục x trước
+
+                # Kiểm tra di chuyển trục x trước xem co va vào tường không, nếu không thì di chuyển và cập nhật hướng
                 if move_x != 0 and not self.is_collide(move_x, 0, walls_collide_list):
                     self.rect.move_ip(move_x, 0)
                     self.update_direction(move_x, 0)
-                elif move_y != 0 and not self.is_collide(0, move_y, walls_collide_list):
+                elif move_y != 0 and not self.is_collide(0, move_y, walls_collide_list): # không được x thì đi theo trục y
                     self.rect.move_ip(0, move_y)
                     self.update_direction(0, move_y)
                 else:
@@ -113,10 +114,13 @@ class Ghost(pygame.sprite.Sprite):
                 if self.current_position != self.previous_position:
                     self.previous_position = self.current_position
 
+    #Kiểm tra va chạm(-1)
     def is_collide(self, dx, dy, walls_collide_list):
         tmp_rect = self.rect.move(dx, dy)
         return tmp_rect.collidelist(walls_collide_list) != -1
 
+
+    #dựa vào dấu của dx và dy để quyết định hướng
     def update_direction(self, dx, dy):
         if dx < 0:
             self.moving_dir = 'left'
@@ -127,6 +131,7 @@ class Ghost(pygame.sprite.Sprite):
         elif dy > 0:
             self.moving_dir = 'down'
 
+    #Đi về vị trí đầu khi bị solokill
     def move_to_start_pos(self):
 
         self.rect.x = self.abs_x
@@ -134,5 +139,6 @@ class Ghost(pygame.sprite.Sprite):
         self.previous_position = (self.grid_row, self.grid_col)
         self.current_position = (self.grid_row, self.grid_col)
 
+    #Lấy vị trí hiện tại
     def get_position(self):
         return self.current_position

@@ -10,7 +10,7 @@ class Cell(pygame.sprite.Sprite):
         self.abs_x = row * self.width
         self.abs_y = col * self.height
         self.rect = pygame.Rect(self.abs_x,self.abs_y,self.width,self.height)
-        self.occupying_piece = None
+        self.occupying_piece = None # đối tượng chiếm giữ
 
     def update(self, screen):
         pygame.draw.rect(screen, pygame.Color("blue2"), self.rect)

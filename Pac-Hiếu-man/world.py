@@ -93,27 +93,26 @@ class World:
 
     def update(self):
         if not self.game_over:
-            # player movement
-            pressed_key = pygame.key.get_pressed()
+            pressed_key = pygame.key.get_pressed() #lấy phím check di chuyển
             self.player.sprite.animate(pressed_key, self.walls_collide_list)
 
-            # teleporting to the other side of the map
+            # Đi qua bên kia bản đồ
             if self.player.sprite.rect.right <= 0:
                 self.player.sprite.rect.x = WIDTH
             elif self.player.sprite.rect.left >= WIDTH:
                 self.player.sprite.rect.x = 0
 
-            # PacMan eating-berry effect
+            # Tăng sức mạnh
             for berry in self.berries.sprites():
                 if self.player.sprite.rect.colliderect(berry.rect):
                     if berry.power_up:
-                        self.player.sprite.immune_time = 150  # Timer based from FPS count
+                        self.player.sprite.immune_time = 150
                         self.player.sprite.pac_score += 50
                     else:
                         self.player.sprite.pac_score += 10
                     berry.kill()
 
-            # PacMan bumping into ghosts
+            # PacMan va chạm ma
             for ghost in self.ghosts.sprites():
                 if self.player.sprite.rect.colliderect(ghost.rect):
                     if not self.player.sprite.immune:
@@ -143,7 +142,7 @@ class World:
         self.display.game_over() if self.game_over else None
         self._dashboard()
 
-        # reset Pac and Ghosts position after PacMan get captured
+        # reset vị trí pacman và ghost khi bị bắt
         if self.reset_pos and not self.game_over:
             [ghost.move_to_start_pos() for ghost in self.ghosts.sprites()]
             self.player.sprite.move_to_start_pos()
@@ -151,7 +150,7 @@ class World:
             self.player.sprite.direction = (0, 0)
             self.reset_pos = False
 
-        # for restart button
+        # nút restart
         if self.game_over:
             pressed_key = pygame.key.get_pressed()
             if pressed_key[pygame.K_r]:

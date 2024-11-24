@@ -2,7 +2,7 @@ from collections import deque
 
 def bfs_search(grid, start, destination):
     rows, cols = len(grid), len(grid[0])
-    queue = deque([(start, [start])])
+    queue = deque([(start, [start])]) #dùng queue
     visited = set()
     visited.add(tuple(start))
 
@@ -27,3 +27,8 @@ def bfs_search(grid, start, destination):
                     queue.append((next_position, path + [next_position]))  # Thêm vào hàng đợi với đường đi mới
 
     return []  # Nếu không tìm thấy đường đi, trả về danh sách rỗng
+
+'''
+Thuật toán thử di chuyển đến mỗi ô lân cận (theo các hướng đã định nghĩa).
+Nếu tọa độ của ô lân cận nằm trong phạm vi của lưới và không phải là chướng ngại vật ('1'), và chưa được thăm, thì sẽ đánh dấu ô đó là đã thăm và thêm vào hàng đợi, kèm theo đường đi cập nhật.
+'''
