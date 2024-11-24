@@ -97,10 +97,12 @@ class World:
             self.player.sprite.animate(pressed_key, self.walls_collide_list)
 
             # Đi qua bên kia bản đồ
-            if self.player.sprite.rect.right <= 0:
+            if self.player.sprite.rect.right <= 0:  # Đi qua cạnh trái
                 self.player.sprite.rect.x = WIDTH
-            elif self.player.sprite.rect.left >= WIDTH:
+            # Nếu nhân vật đi qua cạnh phải của bản đồ
+            elif self.player.sprite.rect.left >= WIDTH:  # Đi qua cạnh phải
                 self.player.sprite.rect.x = 0
+
 
             # Tăng sức mạnh
             for berry in self.berries.sprites():
