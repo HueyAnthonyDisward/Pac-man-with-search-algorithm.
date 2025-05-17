@@ -138,7 +138,7 @@ def main_menu():
         draw_button(text, WIDTH // 2 - button_width // 2, button_y)
 
     # Hiển thị tên người thực hiện
-    names_surface = font_names.render("Nguyễn Trung Hiếu, Lê Hoàng Bảo Phúc, Lý Quang Vinh", True, WHITE)
+    names_surface = font_names.render("Nguyễn Trung Hiếu, Lê Hoàng Bảo Phúc", True, WHITE)
     names_rect = names_surface.get_rect(center=(WIDTH // 2, HEIGHT + NAV_HEIGHT - 50))
     screen.blit(names_surface, names_rect)
 
